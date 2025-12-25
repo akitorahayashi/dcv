@@ -4,7 +4,7 @@
 
 set dotenv-load
 
-APP_NAME := env("TYP_TMPL_APP_NAME", "typ-tmpl")
+APP_NAME := env("DCV_APP_NAME", "dcv")
 
 # default target
 default: help
@@ -38,7 +38,7 @@ setup:
 
 # Run the CLI application
 run *args:
-    @uv run python -m typ_tmpl {{args}}
+    @uv run python -m dcv {{args}}
 
 # ==============================================================================
 # CODE QUALITY

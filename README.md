@@ -1,6 +1,13 @@
-# typ-tmpl
+# dcv
 
-`typ-tmpl` is a minimal, database-independent Python CLI template using Typer. It provides a clean scaffold with dependency injection via context objects, protocols for service interfaces, and a factory pattern for services. This enables high extensibility, maintainability, and testability. Includes environment-aware configuration and a lightweight test suite so you can start new CLI tools quickly without dragging in domain-specific code.
+`dcv` (Document Converter CLI) is a command-line tool for converting documents between PDF and Markdown formats. Built on top of Typer with dependency injection for extensibility and testability.
+
+## Features
+
+- **PDF to Markdown**: Convert PDF files to Markdown using [markitdown](https://github.com/microsoft/markitdown)
+- **Markdown to PDF**: Convert Markdown files to PDF using [md-to-pdf](https://github.com/simonhaenisch/md-to-pdf)
+- **Batch Processing**: Convert entire directories of files at once
+- **Customizable Output**: Specify output directories for converted files
 
 ## 🚀 Installation
 
@@ -9,15 +16,14 @@
 Install directly from GitHub using [pipx](https://pipx.pypa.io/):
 
 ```shell
-pipx install git+https://github.com/akitorahayashi/typ-tmpl.git
+pipx install git+https://github.com/akitorahayashi/dcv.git
 ```
 
-After installation, the `typ-tmpl` command is available globally:
+After installation, the `dcv` command is available globally:
 
 ```shell
-typ-tmpl --version
-typ-tmpl --help
-typ-tmpl greet hello World
+dcv --version
+dcv --help
 ```
 
 ### Development Setup
@@ -25,26 +31,67 @@ typ-tmpl greet hello World
 For development, clone the repository and use [uv](https://github.com/astral-sh/uv):
 
 ```shell
-git clone https://github.com/akitorahayashi/typ-tmpl.git
-cd typ-tmpl
+git clone https://github.com/akitorahayashi/dcv.git
+cd dcv
 just setup
 ```
 
 This installs dependencies with `uv` and creates a local `.env` file if one does not exist.
 
+### Prerequisites for md2pdf
+
+The `md2pdf` command requires [md-to-pdf](https://github.com/simonhaenisch/md-to-pdf) to be installed:
+
+```shell
+npm install -g md-to-pdf
+# or
+pnpm add -g md-to-pdf
+```
+
+## 📖 Usage
+
+### Convert PDF to Markdown
+
+```shell
+# Single file
+dcv pdf2md -f document.pdf
+
+# Directory (recursive)
+dcv pdf2md -d ./pdfs -o ./markdown_output
+```
+
+### Convert Markdown to PDF
+
+```shell
+# Single file
+dcv md2pdf -f document.md
+
+# Directory (recursive)
+dcv md2pdf -d ./markdown -o ./pdf_output
+```
+
+### Options
+
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--file` | `-f` | Input file to convert |
+| `--dir` | `-d` | Input directory containing files to convert |
+| `--output-dir` | `-o` | Output directory (default: `dcv_output`) |
+
 ### Run during Development
 
 ```shell
 just run --help
-just run greet hello World
+just run pdf2md -f document.pdf
+just run md2pdf -f document.md
 just run --version
 ```
 
 Or directly via Python:
 
 ```shell
-uv run python -m typ_tmpl --help
-uv run python -m typ_tmpl greet hello World
+uv run python -m dcv --help
+uv run python -m dcv pdf2md -f document.pdf
 ```
 
 ### Run Tests and Linters
@@ -60,23 +107,24 @@ just fix        # auto-format with ruff format and ruff --fix
 ## 🧱 Project Structure
 
 ```
-├── dev/
-│   └── mocks/
-│       └── services/
-│           └── mock_greeting_service.py  # Toggleable mock implementation
 ├── src/
-│   └── typ_tmpl/
+│   └── dcv/
 │       ├── __init__.py
-│       ├── __main__.py      # python -m typ_tmpl entry point
+│       ├── __main__.py      # python -m dcv entry point
 │       ├── main.py          # Typer app factory and command registration
+│       ├── assets/          # Static resources
+│       │   └── md-to-pdf-config.js  # Default PDF styling configuration
 │       ├── commands/
-│       │   └── greet.py     # Greeting command implementation
+│       │   └── converter.py # pdf2md and md2pdf commands
 │       ├── config/
 │       │   └── settings.py  # Pydantic settings
 │       ├── core/
 │       │   └── container.py # DI container and context
 │       ├── protocols/       # Protocol definitions for service interfaces
-│       └── services/        # Concrete service implementations
+│       └── services/        # Converter implementations
+│           ├── pdf_handler.py   # PDF to Markdown conversion
+│           ├── md_handler.py    # Markdown to PDF conversion
+│           └── file_manager.py  # File discovery and path resolution
 ├── tests/
 │   ├── unit/                # Pure unit tests (service layer)
 │   └── intg/                # Integration tests (CLI with CliRunner)
@@ -86,20 +134,29 @@ just fix        # auto-format with ruff format and ruff --fix
 
 ## 🔧 Configuration
 
-Environment variables are loaded from `.env` (managed by `just setup`):
+Environment variables can be set in `.env`:
 
-- `TYP_TMPL_APP_NAME` – application display name (default `typ-tmpl`).
-- `TYP_TMPL_USE_MOCK_GREETING` – when `true`, injects the development mock greeting service.
+- `DCV_APP_NAME` – application display name (default `dcv`)
+- `DCV_OUTPUT_DIR` – default output directory (default `dcv_output`)
 
 ## ✅ Commands
 
-The template ships with greeting commands:
-
 ```shell
-typ-tmpl --version           # Show version
-typ-tmpl --help              # Show help
-typ-tmpl greet hello <name>  # Greet someone by name
+dcv --version           # Show version
+dcv --help              # Show help
+dcv pdf2md --help       # PDF to Markdown conversion help
+dcv md2pdf --help       # Markdown to PDF conversion help
 ```
 
-Use this as a foundation for adding your own commands, services, and business logic.
+## 📋 Dependencies
 
+- **Python 3.9+**
+- **[markitdown](https://github.com/microsoft/markitdown)** - PDF to Markdown conversion
+- **[md-to-pdf](https://github.com/simonhaenisch/md-to-pdf)** (npm) - Markdown to PDF conversion
+- **[Typer](https://typer.tiangolo.com/)** - CLI framework
+- **[Rich](https://rich.readthedocs.io/)** - Terminal formatting
+- **[Pydantic Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)** - Configuration management
+
+## License
+
+MIT
