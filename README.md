@@ -150,13 +150,9 @@ dcv md2pdf --help       # Markdown to PDF conversion help
 
 ## 📋 Dependencies
 
-- **Python 3.9+**
+- **Python 3.10+**
 - **[markitdown](https://github.com/microsoft/markitdown)** - PDF to Markdown conversion
 - **[md-to-pdf](https://github.com/simonhaenisch/md-to-pdf)** (npm) - Markdown to PDF conversion
 - **[Typer](https://typer.tiangolo.com/)** - CLI framework
 - **[Rich](https://rich.readthedocs.io/)** - Terminal formatting
 - **[Pydantic Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)** - Configuration management
-
-## License
-
-MIT

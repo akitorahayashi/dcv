@@ -21,6 +21,11 @@ class FileManager:
         """Get the output directory."""
         return self._output_dir
 
+    @output_dir.setter
+    def output_dir(self, value: Path) -> None:
+        """Set the output directory."""
+        self._output_dir = value
+
     def ensure_output_dir(self) -> Path:
         """
         Ensure the output directory exists.
@@ -101,9 +106,9 @@ class FileManager:
             relative_path = input_path.relative_to(source_dir)
             output_path = self._output_dir / relative_path.with_suffix(output_extension)
         else:
-            output_path = self._output_dir / input_path.with_suffix(
-                output_extension
-            ).name
+            output_path = (
+                self._output_dir / input_path.with_suffix(output_extension).name
+            )
 
         return output_path
 
@@ -129,7 +134,5 @@ class FileManager:
         source_dir = source if source.is_dir() else None
 
         for input_path in self.find_files(source, input_extensions, recursive):
-            output_path = self.get_output_path(
-                input_path, output_extension, source_dir
-            )
+            output_path = self.get_output_path(input_path, output_extension, source_dir)
             yield input_path, output_path

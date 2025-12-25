@@ -4,13 +4,8 @@ from pathlib import Path
 
 from markitdown import MarkItDown
 
+from dcv.errors import ConversionError
 from dcv.protocols.converter_protocol import ConverterProtocol
-
-
-class ConversionError(Exception):
-    """Raised when document conversion fails."""
-
-    pass
 
 
 class PdfHandler(ConverterProtocol):

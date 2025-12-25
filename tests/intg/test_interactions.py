@@ -79,7 +79,7 @@ class TestCLIIntegration:
         )
 
         # The command should run without errors (mocked conversion)
-        assert "Converting:" in result.output or result.exit_code == 0
+        assert result.exit_code == 0 and "Converting:" in result.output
 
     @patch("dcv.services.pdf_handler.PdfHandler.convert")
     def test_pdf2md_with_directory(
@@ -97,9 +97,9 @@ class TestCLIIntegration:
         )
 
         # Should process both files
-        assert result.exit_code == 0 or "Converting:" in result.output
+        assert result.exit_code == 0 and "Converting:" in result.output
 
-    @patch("shutil.which")
+    @patch("dcv.services.md_handler.shutil.which")
     def test_md2pdf_without_md_to_pdf_installed(
         self, mock_which: MagicMock, cli_runner: CliRunner, tmp_path: Path
     ):
@@ -114,7 +114,7 @@ class TestCLIIntegration:
         )
 
         # Should show an error about md-to-pdf not being installed
-        assert "md-to-pdf" in result.output.lower() or result.exit_code != 0
+        assert "md-to-pdf" in result.output.lower()
 
 
 class TestContainerIntegration:

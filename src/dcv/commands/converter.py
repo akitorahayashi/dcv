@@ -29,9 +29,7 @@ def _validate_input_options(
         typer.BadParameter: If neither or both options are provided.
     """
     if file is None and directory is None:
-        raise typer.BadParameter(
-            "Either --file/-f or --dir/-d must be specified."
-        )
+        raise typer.BadParameter("Either --file/-f or --dir/-d must be specified.")
 
     if file is not None and directory is not None:
         raise typer.BadParameter(
@@ -90,7 +88,7 @@ def pdf2md(
         raise typer.Exit(1)
 
     # Update file manager output directory
-    app_ctx.file_manager._output_dir = output_dir
+    app_ctx.file_manager.output_dir = output_dir
     app_ctx.file_manager.ensure_output_dir()
 
     # Generate path pairs and convert
@@ -98,8 +96,6 @@ def pdf2md(
     output_extension = ".md"
     converted_count = 0
     error_count = 0
-
-    source_dir = source if is_dir else None
 
     for input_path, output_path in app_ctx.file_manager.generate_path_pairs(
         source, input_extensions, output_extension
@@ -172,7 +168,7 @@ def md2pdf(
         raise typer.Exit(1)
 
     # Update file manager output directory
-    app_ctx.file_manager._output_dir = output_dir
+    app_ctx.file_manager.output_dir = output_dir
     app_ctx.file_manager.ensure_output_dir()
 
     # Generate path pairs and convert

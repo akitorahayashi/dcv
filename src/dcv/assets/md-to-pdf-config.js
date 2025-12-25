@@ -6,9 +6,6 @@ module.exports = {
     landscape: false,
     scale: 1.0
   },
-  launch_options: {
-    executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  },
   css: `  
     body {  
       font-family: 'Noto Sans CJK JP', 'Hiragino Sans', sans-serif;  

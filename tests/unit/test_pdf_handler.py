@@ -5,7 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from dcv.services.pdf_handler import ConversionError, PdfHandler
+from dcv.errors import ConversionError
+from dcv.services.pdf_handler import PdfHandler
 
 
 class TestPdfHandler:
@@ -64,10 +65,15 @@ class TestPdfHandler:
         # Verify
         mock_md_instance.convert.assert_called_once_with(str(input_path))
         assert output_path.exists()
-        assert output_path.read_text() == "# Converted Content\n\nThis is the converted text."
+        assert (
+            output_path.read_text()
+            == "# Converted Content\n\nThis is the converted text."
+        )
 
     @patch("dcv.services.pdf_handler.MarkItDown")
-    def test_convert_creates_output_directory(self, mock_md_class: MagicMock, tmp_path: Path):
+    def test_convert_creates_output_directory(
+        self, mock_md_class: MagicMock, tmp_path: Path
+    ):
         """Test that output directory is created if it doesn't exist."""
         mock_md_instance = MagicMock()
         mock_md_class.return_value = mock_md_instance
@@ -87,7 +93,9 @@ class TestPdfHandler:
         assert output_path.exists()
 
     @patch("dcv.services.pdf_handler.MarkItDown")
-    def test_convert_handles_conversion_error(self, mock_md_class: MagicMock, tmp_path: Path):
+    def test_convert_handles_conversion_error(
+        self, mock_md_class: MagicMock, tmp_path: Path
+    ):
         """Test that conversion errors are wrapped properly."""
         mock_md_instance = MagicMock()
         mock_md_class.return_value = mock_md_instance

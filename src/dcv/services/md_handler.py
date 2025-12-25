@@ -5,8 +5,8 @@ import subprocess
 from importlib import resources
 from pathlib import Path
 
+from dcv.errors import ConversionError
 from dcv.protocols.converter_protocol import ConverterProtocol
-from dcv.services.pdf_handler import ConversionError
 
 
 class MdToPdfNotFoundError(Exception):

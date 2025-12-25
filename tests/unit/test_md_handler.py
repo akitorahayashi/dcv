@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from dcv.errors import ConversionError
 from dcv.services.md_handler import MdHandler, MdToPdfNotFoundError
-from dcv.services.pdf_handler import ConversionError
 
 
 class TestMdHandler:
