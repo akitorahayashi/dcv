@@ -1,29 +1,31 @@
-# typ-tmpl Agent Notes
+# dcv Agent Notes
 
 ## Overview
-- Minimal Typer CLI template intended as a clean starting point for new command-line tools.
-- Ships only the essentials: dependency injection using context objects, protocols for interfaces, factory pattern for services, greeting commands, and test/CI wiring.
+- Document Converter CLI for converting between PDF and Markdown formats.
+- Built on Typer with dependency injection using context objects, protocols for interfaces, and factory pattern for services.
 
 ## Design Philosophy
-- Stay database-agnostic; add persistence only when the target project needs it.
-- Use Typer-native `ctx.obj` pattern with protocols for service interfaces and factory pattern for implementations to maximize extensibility, maintainability, and testability.
-- Keep settings and dependencies explicit via `AppSettings` and `AppContext` container.
+- Use `markitdown` for PDF to Markdown conversion.
+- Use `md-to-pdf` (npm package) for Markdown to PDF conversion.
+- Keep the CLI simple with two main commands: `pdf2md` and `md2pdf`.
+- Use Typer-native `ctx.obj` pattern with protocols for service interfaces.
 - Maintain parity between local and CI flows with a single source of truth (`just`, `uv`, `.env`).
 
-## First Steps When Creating a Real CLI
-1. Clone or copy the template and run `just setup` to install dependencies.
-2. Rename the Python package from `typ_tmpl` if you need a project-specific namespace.
-3. Add new commands under `src/typ_tmpl/commands/` and register them in `main.py`.
-4. Update `.env.example` and documentation to reflect new environment variables or external services.
-
 ## Key Files
-- `src/typ_tmpl/core/container.py`: central place to wire settings and service providers.
-- `src/typ_tmpl/main.py`: Typer app instantiation; attach new command groups here.
-- `src/typ_tmpl/commands/`: command implementations (subcommand modules).
-- `src/typ_tmpl/protocols/`: protocol definitions for service interfaces.
-- `src/typ_tmpl/services/`: concrete service implementations.
-- `tests/`: unit/intg layout kept light so additional checks can drop in without restructuring.
+- `src/dcv/core/container.py`: Central place to wire settings and service providers.
+- `src/dcv/main.py`: Typer app instantiation; commands registered at root level.
+- `src/dcv/commands/converter.py`: pdf2md and md2pdf command implementations.
+- `src/dcv/protocols/converter_protocol.py`: Protocol definition for converter services.
+- `src/dcv/services/pdf_handler.py`: PDF to Markdown conversion using markitdown.
+- `src/dcv/services/md_handler.py`: Markdown to PDF conversion using md-to-pdf subprocess.
+- `src/dcv/services/file_manager.py`: File discovery, path resolution, and batch processing.
+- `src/dcv/assets/md-to-pdf-config.js`: Default PDF styling configuration.
+- `tests/`: Unit and integration tests.
 
 ## Tooling Snapshot
 - `justfile`: run/lint/test tasks (`unit-test`, `intg-test`) used locally and in CI. Prefer `just test` as the unified entrypoint.
-- `uv.lock` + `pyproject.toml`: reproducible dependency graph; regenerate with `uv pip compile` when deps change.
+- `uv.lock` + `pyproject.toml`: Reproducible dependency graph; regenerate with `uv pip compile` when deps change.
+
+## External Dependencies
+- `md-to-pdf` must be installed via npm/pnpm: `npm install -g md-to-pdf`
+- Requires Google Chrome for PDF rendering (configured in `md-to-pdf-config.js`)
