@@ -116,7 +116,9 @@ just fix        # auto-format with ruff format and ruff --fix
 │       ├── assets/          # Static resources
 │       │   └── md-to-pdf-config.js  # Default PDF styling configuration
 │       ├── commands/
-│       │   └── converter.py # pdf2md and md2pdf commands
+│       │   ├── pdf2md.py     # pdf2md command
+│       │   ├── md2pdf.py     # md2pdf command
+│       │   └── validate_options.py # Shared command utilities
 │       ├── config/
 │       │   └── settings.py  # Pydantic settings
 │       ├── protocols/       # Protocol definitions for service interfaces
