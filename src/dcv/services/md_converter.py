@@ -1,8 +1,12 @@
 """Markdown to PDF conversion handler using Playwright."""
 
 import asyncio
+import base64
+import html
 import logging
+import mimetypes
 import re
+from html.parser import HTMLParser
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -19,6 +23,126 @@ class PlaywrightNotInstalledError(Exception):
     """Raised when Playwright browsers are not installed."""
 
     pass
+
+
+class ImageEmbedder(HTMLParser):
+    """HTML parser that converts relative image paths to data URLs."""
+
+    _MIME_TYPE_FALLBACK = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".svg": "image/svg+xml",
+        ".webp": "image/webp",
+    }
+
+    def __init__(self, base_dir: Path) -> None:
+        """
+        Initialize the image embedder.
+
+        Args:
+            base_dir: Base directory for resolving relative image paths.
+        """
+        super().__init__()
+        self.base_dir = base_dir
+        self.output: list[str] = []
+
+    def _process_img_attrs(
+        self, attrs: list[tuple[str, str | None]]
+    ) -> list[tuple[str, str | None]]:
+        """
+        Process img tag attributes, converting src to data URL if needed.
+
+        Args:
+            attrs: List of attribute name-value tuples.
+
+        Returns:
+            Processed list of attribute name-value tuples.
+        """
+        new_attrs = []
+        for attr_name, attr_value in attrs:
+            if attr_name == "src" and attr_value:
+                attr_value = self._convert_to_data_url(attr_value)
+            new_attrs.append((attr_name, attr_value))
+        return new_attrs
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        """Handle start tags, converting img src to data URLs."""
+        if tag == "img":
+            attrs = self._process_img_attrs(attrs)
+
+        # Reconstruct the tag with HTML-escaped attribute values
+        attrs_str = "".join(
+            f' {name}="{html.escape(value)}"' if value is not None else f" {name}"
+            for name, value in attrs
+        )
+        self.output.append(f"<{tag}{attrs_str}>")
+
+    def handle_endtag(self, tag: str) -> None:
+        """Handle end tags."""
+        self.output.append(f"</{tag}>")
+
+    def handle_data(self, data: str) -> None:
+        """Handle text data."""
+        self.output.append(data)
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        """Handle self-closing tags like <img />."""
+        if tag == "img":
+            attrs = self._process_img_attrs(attrs)
+
+        # Reconstruct the self-closing tag with HTML-escaped attribute values
+        attrs_str = "".join(
+            f' {name}="{html.escape(value)}"' if value is not None else f" {name}"
+            for name, value in attrs
+        )
+        self.output.append(f"<{tag}{attrs_str} />")
+
+    def _convert_to_data_url(self, src: str) -> str:
+        """
+        Convert a relative image path to a data URL.
+
+        Args:
+            src: Image source path (relative or absolute).
+
+        Returns:
+            Data URL if conversion successful, otherwise original src.
+        """
+        # Skip if already a data URL or absolute URL
+        if src.startswith(("data:", "http://", "https://", "//")):
+            return src
+
+        # Resolve relative path
+        image_path = self.base_dir / src
+        if not image_path.exists():
+            logging.warning(f"Image not found: {image_path}")
+            return src
+
+        try:
+            # Read image file
+            image_data = image_path.read_bytes()
+
+            # Determine MIME type
+            mime_type, _ = mimetypes.guess_type(str(image_path))
+            if not mime_type:
+                # Default to common image types
+                ext = image_path.suffix.lower()
+                mime_type = self._MIME_TYPE_FALLBACK.get(ext, "image/png")
+
+            # Encode to base64
+            encoded = base64.b64encode(image_data).decode("utf-8")
+
+            # Return data URL
+            return f"data:{mime_type};base64,{encoded}"
+
+        except (IOError, OSError, UnicodeDecodeError) as e:
+            logging.warning(f"Failed to embed image {image_path}: {e}")
+            return src
+
+    def get_html(self) -> str:
+        """Get the processed HTML."""
+        return "".join(self.output)
 
 
 class MdConverter(ConverterProtocol):
@@ -95,12 +219,18 @@ class MdConverter(ConverterProtocol):
 
         return template_content, css_content
 
-    def _render_html(self, markdown_content: str, css_path: Path | None = None) -> str:
+    def _render_html(
+        self,
+        markdown_content: str,
+        source_dir: Path,
+        css_path: Path | None = None,
+    ) -> str:
         """
         Render Markdown to full HTML with template and styling.
 
         Args:
             markdown_content: Raw Markdown text.
+            source_dir: Directory of the source Markdown file (for resolving relative image paths).
             css_path: Optional custom CSS stylesheet path.
 
         Returns:
@@ -108,6 +238,11 @@ class MdConverter(ConverterProtocol):
         """
         # Parse Markdown to HTML
         html_body = self._md.render(markdown_content)
+
+        # Embed images as data URLs
+        embedder = ImageEmbedder(source_dir)
+        embedder.feed(html_body)
+        html_body = embedder.get_html()
 
         # Load assets
         template_str, css_str = self._load_assets(css_path)
@@ -146,8 +281,8 @@ class MdConverter(ConverterProtocol):
         # Read Markdown content
         md_content = input_path.read_text(encoding="utf-8")
 
-        # Render to HTML
-        full_html = self._render_html(md_content, css_path)
+        # Render to HTML (pass source directory for resolving relative image paths)
+        full_html = self._render_html(md_content, input_path.parent, css_path)
 
         # Ensure output directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)

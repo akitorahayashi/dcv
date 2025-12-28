@@ -39,3 +39,9 @@ def hello():
 |----------|----------|
 | Cell 1   | Cell 2   |
 
+## Images
+
+Here's an embedded image with a relative path:
+
+![Leaf Image](sample.png)
+
