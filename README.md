@@ -1,13 +1,15 @@
 # dcv
 
-`dcv` (Document Converter CLI) is a command-line tool for converting documents between PDF and Markdown formats. Built on top of Typer with dependency injection for extensibility and testability.
+`dcv` (Document Converter CLI) is a pure Python command-line tool for converting documents between PDF and Markdown formats. Built with Typer, featuring dependency injection for extensibility and testability.
 
 ## Features
 
 - **PDF to Markdown**: Convert PDF files to Markdown using [markitdown](https://github.com/microsoft/markitdown)
-- **Markdown to PDF**: Convert Markdown files to PDF using [md-to-pdf](https://github.com/simonhaenisch/md-to-pdf)
+- **Markdown to PDF**: Convert Markdown files to styled PDFs using [Playwright](https://playwright.dev/) with MathJax support
 - **Batch Processing**: Convert entire directories of files at once
 - **Customizable Output**: Specify output directories for converted files
+- **MathJax Support**: Full LaTeX equation rendering in PDF output
+- **Pure Python**: No Node.js dependencies required
 
 ## 🚀 Installation
 
@@ -19,7 +21,13 @@ Install directly from GitHub using [pipx](https://pipx.pypa.io/):
 pipx install git+https://github.com/akitorahayashi/dcv.git
 ```
 
-After installation, the `dcv` command is available globally:
+After installation, install Playwright browsers (required for PDF generation):
+
+```shell
+playwright install chromium
+```
+
+The `dcv` command is now available globally:
 
 ```shell
 dcv --version
@@ -38,14 +46,10 @@ just setup
 
 This installs dependencies with `uv` and creates a local `.env` file if one does not exist.
 
-### Prerequisites for md2pdf
-
-The `md2pdf` command requires [md-to-pdf](https://github.com/simonhaenisch/md-to-pdf) to be installed:
+Then install Playwright browsers:
 
 ```shell
-npm install -g md-to-pdf
-# or
-pnpm add -g md-to-pdf
+uv run playwright install chromium
 ```
 
 ## 📖 Usage
@@ -112,20 +116,25 @@ just fix        # auto-format with ruff format and ruff --fix
 │       ├── __init__.py
 │       ├── __main__.py      # python -m dcv entry point
 │       ├── main.py          # Typer app factory and command registration
+│       ├── container.py     # DI container and context
 │       ├── assets/          # Static resources
-│       │   └── md-to-pdf-config.js  # Default PDF styling configuration
+│       │   ├── templates/   # HTML templates for PDF generation
+│       │   │   └── base.html
+│       │   └── styles/      # CSS stylesheets for PDF styling
+│       │       └── pdf.css
 │       ├── commands/
-│       │   └── converter.py # pdf2md and md2pdf commands
+│       │   ├── pdf2md.py     # pdf2md command
+│       │   ├── md2pdf.py     # md2pdf command
+│       │   └── validate_options.py # Shared command utilities
 │       ├── config/
 │       │   └── settings.py  # Pydantic settings
-│       ├── core/
-│       │   └── container.py # DI container and context
 │       ├── protocols/       # Protocol definitions for service interfaces
 │       └── services/        # Converter implementations
-│           ├── pdf_handler.py   # PDF to Markdown conversion
-│           ├── md_handler.py    # Markdown to PDF conversion
+│           ├── pdf_converter.py   # PDF to Markdown conversion
+│           ├── md_converter.py    # Markdown to PDF conversion (Playwright)
 │           └── file_manager.py  # File discovery and path resolution
 ├── tests/
+│   ├── fixtures/            # Test fixtures (sample.md, sample_with_math.md)
 │   ├── unit/                # Pure unit tests (service layer)
 │   └── intg/                # Integration tests (CLI with CliRunner)
 ├── justfile
@@ -152,7 +161,9 @@ dcv md2pdf --help       # Markdown to PDF conversion help
 
 - **Python 3.10+**
 - **[markitdown](https://github.com/microsoft/markitdown)** - PDF to Markdown conversion
-- **[md-to-pdf](https://github.com/simonhaenisch/md-to-pdf)** (npm) - Markdown to PDF conversion
+- **[Playwright](https://playwright.dev/)** - Browser automation for PDF generation
+- **[markdown-it-py](https://github.com/executablebooks/markdown-it-py)** - Markdown parsing
+- **[Jinja2](https://jinja.palletsprojects.com/)** - HTML template engine
 - **[Typer](https://typer.tiangolo.com/)** - CLI framework
 - **[Rich](https://rich.readthedocs.io/)** - Terminal formatting
 - **[Pydantic Settings](https://docs.pydantic.dev/latest/concepts/pydantic_settings/)** - Configuration management

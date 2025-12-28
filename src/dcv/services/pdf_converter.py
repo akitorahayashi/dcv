@@ -8,7 +8,7 @@ from dcv.errors import ConversionError
 from dcv.protocols.converter_protocol import ConverterProtocol
 
 
-class PdfHandler(ConverterProtocol):
+class PdfConverter(ConverterProtocol):
     """Handler for converting PDF files to Markdown using markitdown."""
 
     SUPPORTED_EXTENSIONS = {".pdf"}
@@ -58,4 +58,4 @@ class PdfHandler(ConverterProtocol):
         return extension.lower() in self.SUPPORTED_EXTENSIONS
 
 
-_: ConverterProtocol = PdfHandler()
+_: ConverterProtocol = PdfConverter()

@@ -20,6 +20,9 @@ jobs:
         with:
           dependency-command: 'uv sync --frozen'
 
+      - name: Install Playwright browsers
+        run: uv run playwright install chromium
+
       - name: Run tests
         run: |
           just ${{ matrix.test_target }}
