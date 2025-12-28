@@ -84,5 +84,6 @@ def pdf2md(
         console.print(f"[green]✓ Converted {converted_count} file(s)[/green]")
     if error_count > 0:
         console.print(f"[red]✗ Failed {error_count} file(s)[/red]")
+        raise typer.Exit(1)
     if converted_count == 0 and error_count == 0:
         console.print("[yellow]No PDF files found to convert.[/yellow]")

@@ -112,23 +112,5 @@ class TestPdfConverter:
         with pytest.raises(ConversionError, match="Failed to convert"):
             handler.convert(input_path, output_path)
 
-    def test_convert_real_pdf_fixture_no_errors(self, tmp_path: Path):
-        """Test PDF→MD conversion completes without errors via MD→PDF→MD round-trip."""
-        from dcv.services import MdConverter
-
-        sample_md = FIXTURES_DIR / "sample.md"
-
-        # First: MD→PDF
-        md_converter = MdConverter()
-        sample_pdf = tmp_path / "sample.pdf"
-        md_converter.convert(sample_md, sample_pdf)
-
-        # Then: PDF→MD
-        pdf_converter = PdfConverter()
-        output_md = tmp_path / "output.md"
-        pdf_converter.convert(sample_pdf, output_md)
-
-        assert output_md.exists()
-        content = output_md.read_text(encoding="utf-8")
-        assert "サンプルドキュメント" in content
-        assert "dcv" in content
+    # Note: Round-trip tests (MD→PDF→MD) moved to integration tests
+    # as they require full Playwright environment and are not true unit tests

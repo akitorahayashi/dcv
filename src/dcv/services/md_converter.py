@@ -1,6 +1,7 @@
 """Markdown to PDF conversion handler using Playwright."""
 
 import asyncio
+import logging
 from importlib import resources
 from pathlib import Path
 
@@ -10,6 +11,14 @@ from playwright.async_api import async_playwright
 
 from dcv.errors import ConversionError
 from dcv.protocols.converter_protocol import ConverterProtocol
+
+# PDF generation constants
+PDF_FORMAT = "A4"
+PDF_MARGIN_TOP = "30mm"
+PDF_MARGIN_RIGHT = "20mm"
+PDF_MARGIN_BOTTOM = "30mm"  # Matches original md-to-pdf config
+PDF_MARGIN_LEFT = "20mm"
+PDF_SCALE = 1.0
 
 
 class PlaywrightNotInstalledError(Exception):
@@ -140,22 +149,22 @@ class MdConverter(ConverterProtocol):
                 # Wait for MathJax to finish rendering
                 try:
                     await page.evaluate("window.MathJax.typesetPromise()")
-                except Exception:
-                    # MathJax might not be needed for all documents
-                    pass
+                except Exception as e:
+                    # MathJax might not be needed for all documents, but log the error for debugging
+                    logging.warning(f"Could not typeset MathJax: {e}")
 
                 # Generate PDF with settings matching md-to-pdf config
                 await page.pdf(
                     path=str(output_path),
-                    format="A4",
+                    format=PDF_FORMAT,
                     margin={
-                        "top": "30mm",
-                        "right": "20mm",
-                        "bottom": "20mm",
-                        "left": "20mm",
+                        "top": PDF_MARGIN_TOP,
+                        "right": PDF_MARGIN_RIGHT,
+                        "bottom": PDF_MARGIN_BOTTOM,
+                        "left": PDF_MARGIN_LEFT,
                     },
                     print_background=True,
-                    scale=1.0,
+                    scale=PDF_SCALE,
                 )
 
                 await browser.close()
