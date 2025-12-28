@@ -61,3 +61,108 @@ class TestMd2PdfRealConversion:
         with output_file.open("rb") as f:
             header = f.read(4)
             assert header == b"%PDF", "Generated file is not a valid PDF"
+
+    def test_md2pdf_with_custom_css(self, cli_runner: CliRunner, tmp_path: Path):
+        """Test MD→PDF conversion with custom CSS file."""
+        sample_md = FIXTURES_DIR / "sample.md"
+        custom_css = FIXTURES_DIR / "custom_style.css"
+        output_dir = tmp_path / "output"
+
+        result = cli_runner.invoke(
+            app,
+            [
+                "md2pdf",
+                "-f",
+                str(sample_md),
+                "-o",
+                str(output_dir),
+                "--css",
+                str(custom_css),
+            ],
+        )
+
+        assert result.exit_code == 0, f"Command failed: {result.output}"
+        assert "Converting:" in result.output
+
+        output_file = output_dir / "sample.pdf"
+        assert output_file.exists(), f"PDF not created: {result.output}"
+
+        with output_file.open("rb") as f:
+            header = f.read(4)
+            assert header == b"%PDF", "Generated file is not a valid PDF"
+
+    def test_md2pdf_with_margin_flags(self, cli_runner: CliRunner, tmp_path: Path):
+        """Test MD→PDF conversion with margin override flags."""
+        sample_md = FIXTURES_DIR / "sample.md"
+        output_dir = tmp_path / "output"
+
+        result = cli_runner.invoke(
+            app,
+            [
+                "md2pdf",
+                "-f",
+                str(sample_md),
+                "-o",
+                str(output_dir),
+                "--margin-top",
+                "35mm",
+                "--margin-bottom",
+                "30mm",
+            ],
+        )
+
+        assert result.exit_code == 0, f"Command failed: {result.output}"
+        assert "Converting:" in result.output
+
+        output_file = output_dir / "sample.pdf"
+        assert output_file.exists(), f"PDF not created: {result.output}"
+
+    def test_md2pdf_combined_css_and_margins(
+        self, cli_runner: CliRunner, tmp_path: Path
+    ):
+        """Test MD→PDF conversion with both custom CSS and margin overrides."""
+        sample_md = FIXTURES_DIR / "sample.md"
+        custom_css = FIXTURES_DIR / "academic_style.css"
+        output_dir = tmp_path / "output"
+
+        result = cli_runner.invoke(
+            app,
+            [
+                "md2pdf",
+                "-f",
+                str(sample_md),
+                "-o",
+                str(output_dir),
+                "--css",
+                str(custom_css),
+                "--margin-top",
+                "40mm",  # Override CSS margin
+            ],
+        )
+
+        assert result.exit_code == 0, f"Command failed: {result.output}"
+
+        output_file = output_dir / "sample.pdf"
+        assert output_file.exists()
+
+    def test_md2pdf_invalid_margin_format(self, cli_runner: CliRunner, tmp_path: Path):
+        """Test that invalid margin format produces error."""
+        sample_md = FIXTURES_DIR / "sample.md"
+        output_dir = tmp_path / "output"
+
+        result = cli_runner.invoke(
+            app,
+            [
+                "md2pdf",
+                "-f",
+                str(sample_md),
+                "-o",
+                str(output_dir),
+                "--margin-top",
+                "invalid",
+            ],
+        )
+
+        # Should fail with validation error
+        assert result.exit_code != 0
+        assert "error" in result.output.lower() or "invalid" in result.output.lower()

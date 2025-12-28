@@ -1,0 +1,14 @@
+/* Custom CSS for testing - Alternate margins */
+@page {
+  size: A4;
+  margin-top: 40mm;
+  margin-right: 25mm;
+  margin-bottom: 40mm;
+  margin-left: 25mm;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  font-size: 10pt;
+  line-height: 1.4;
+}

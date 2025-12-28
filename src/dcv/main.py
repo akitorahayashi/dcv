@@ -6,7 +6,7 @@ from typing import Optional
 import typer
 from rich.console import Console
 
-from dcv.commands import md2pdf_app, pdf2md_app
+from dcv.commands import md2pdf_app, pdf2md_app, scaffold_app
 from dcv.container import create_container
 
 console = Console()
@@ -46,6 +46,7 @@ app = typer.Typer(
 # Register commands at root level
 app.add_typer(pdf2md_app, name="")
 app.add_typer(md2pdf_app, name="")
+app.add_typer(scaffold_app, name="")
 
 
 @app.callback()
