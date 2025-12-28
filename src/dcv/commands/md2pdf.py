@@ -43,14 +43,46 @@ def md2pdf(
         help="Output directory for converted PDF files.",
         resolve_path=True,
     ),
+    css: Optional[Path] = typer.Option(
+        None,
+        "--css",
+        "-c",
+        help="Custom CSS file for PDF styling.",
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        resolve_path=True,
+    ),
+    margin_top: Optional[str] = typer.Option(
+        None,
+        "--margin-top",
+        help="Top margin (e.g., '35mm', '1in'). Overrides CSS.",
+    ),
+    margin_right: Optional[str] = typer.Option(
+        None,
+        "--margin-right",
+        help="Right margin (e.g., '20mm'). Overrides CSS.",
+    ),
+    margin_bottom: Optional[str] = typer.Option(
+        None,
+        "--margin-bottom",
+        help="Bottom margin (e.g., '30mm'). Overrides CSS.",
+    ),
+    margin_left: Optional[str] = typer.Option(
+        None,
+        "--margin-left",
+        help="Left margin (e.g., '25mm'). Overrides CSS.",
+    ),
 ) -> None:
     """
     Convert Markdown file(s) to PDF.
 
-    Requires md-to-pdf to be installed: npm install -g md-to-pdf
+    Requires Playwright browsers: playwright install chromium
 
     Examples:
         dcv md2pdf -f document.md
+        dcv md2pdf -f document.md --css custom.css
+        dcv md2pdf -f document.md --margin-top 35mm --margin-bottom 30mm
         dcv md2pdf -d ./markdown -o ./pdf_output
     """
     app_ctx: AppContext = ctx.obj
@@ -74,7 +106,15 @@ def md2pdf(
     ):
         try:
             console.print(f"Converting: [cyan]{input_path.name}[/cyan]...")
-            app_ctx.md_converter.convert(input_path, output_path)
+            app_ctx.md_converter.convert(
+                input_path,
+                output_path,
+                css_path=css,
+                margin_top=margin_top,
+                margin_right=margin_right,
+                margin_bottom=margin_bottom,
+                margin_left=margin_left,
+            )
             console.print(f"  → [green]{output_path}[/green]")
             converted_count += 1
         except Exception as e:

@@ -81,6 +81,128 @@ dcv md2pdf -d ./markdown -o ./pdf_output
 | `--file` | `-f` | Input file to convert |
 | `--dir` | `-d` | Input directory containing files to convert |
 | `--output-dir` | `-o` | Output directory (default: `dcv_output`) |
+| `--css` | `-c` | Custom CSS file for PDF styling (md2pdf only) |
+| `--margin-top` | | Top margin override (md2pdf only, e.g., "35mm") |
+| `--margin-bottom` | | Bottom margin override (md2pdf only) |
+| `--margin-left` | | Left margin override (md2pdf only) |
+| `--margin-right` | | Right margin override (md2pdf only) |
+
+## 🎨 Customizing PDF Output
+
+### Export Default Assets
+
+Export dcv's default CSS and HTML template for customization:
+
+```shell
+dcv scaffold --css              # Export CSS stylesheet
+dcv scaffold --template         # Export HTML template
+dcv scaffold --all              # Export both
+dcv scaffold --all -o custom/   # Export to custom/ directory
+```
+
+### Using Custom Styles
+
+Create a custom stylesheet:
+
+```shell
+dcv scaffold --css
+# Creates dcv_custom.css in current directory
+```
+
+Edit `dcv_custom.css` to match your requirements:
+
+```css
+@page {
+  size: A4;
+  margin-top: 35mm;    /* Academic paper margins */
+  margin-bottom: 30mm;
+  margin-left: 30mm;
+  margin-right: 30mm;
+}
+
+body {
+  font-family: "Times New Roman", serif;
+  font-size: 12pt;
+  text-align: justify;
+  line-height: 2.0;
+}
+
+h1 {
+  font-size: 16pt;
+  text-align: center;
+}
+```
+
+Use your custom stylesheet:
+
+```shell
+dcv md2pdf -f paper.md --css dcv_custom.css
+```
+
+### Quick Margin Overrides
+
+For one-off changes without creating a CSS file:
+
+```shell
+dcv md2pdf -f doc.md --margin-top 35mm --margin-bottom 25mm
+```
+
+### Configuration Precedence
+
+Settings are applied in this order (highest to lowest priority):
+
+1. **CLI `--margin-*` flags** - Override everything
+2. **Custom CSS via `--css` flag** - Override default styles
+3. **Default bundled CSS** - Base styling
+
+### Examples
+
+**Academic Thesis (Japanese University)**
+```shell
+# Create custom CSS
+dcv scaffold --css
+
+# Edit dcv_custom.css for thesis requirements
+cat > dcv_custom.css <<EOF
+@page {
+  size: A4;
+  margin-top: 35mm;
+  margin-bottom: 30mm;
+  margin-left: 30mm;
+  margin-right: 30mm;
+}
+
+body {
+  font-family: "Noto Serif JP", serif;
+  font-size: 10.5pt;
+  text-align: justify;
+  line-height: 2.0;
+}
+EOF
+
+# Convert thesis
+dcv md2pdf -f thesis.md --css dcv_custom.css
+```
+
+**Business Report**
+```shell
+dcv md2pdf -f report.md --margin-top 25mm --margin-bottom 25mm
+```
+
+**Two-Column Academic Paper**
+```css
+/* In dcv_custom.css */
+.markdown-body {
+  column-count: 2;
+  column-gap: 10mm;
+}
+
+h1, h2 {
+  column-span: all;  /* Full-width headings */
+}
+```
+
+### Options
 
 ### Run during Development
 
@@ -125,6 +247,7 @@ just fix        # auto-format with ruff format and ruff --fix
 │       ├── commands/
 │       │   ├── pdf2md.py     # pdf2md command
 │       │   ├── md2pdf.py     # md2pdf command
+│       │   ├── scaffold.py   # scaffold command
 │       │   └── validate_options.py # Shared command utilities
 │       ├── config/
 │       │   └── settings.py  # Pydantic settings
@@ -155,6 +278,7 @@ dcv --version           # Show version
 dcv --help              # Show help
 dcv pdf2md --help       # PDF to Markdown conversion help
 dcv md2pdf --help       # Markdown to PDF conversion help
+dcv scaffold --help     # Export default assets for customization
 ```
 
 ## 📋 Dependencies

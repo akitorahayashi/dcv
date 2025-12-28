@@ -1,6 +1,7 @@
 """PDF to Markdown conversion handler using markitdown."""
 
 from pathlib import Path
+from typing import Any
 
 from markitdown import MarkItDown
 
@@ -17,13 +18,14 @@ class PdfConverter(ConverterProtocol):
         """Initialize the PDF handler with a MarkItDown instance."""
         self._md = MarkItDown()
 
-    def convert(self, input_path: Path, output_path: Path) -> None:
+    def convert(self, input_path: Path, output_path: Path, **kwargs: Any) -> None:
         """
         Convert a PDF file to Markdown.
 
         Args:
             input_path: Path to the source PDF file.
             output_path: Path where the Markdown file will be written.
+            **kwargs: Additional options (unused for PDF conversion).
 
         Raises:
             FileNotFoundError: If input file does not exist.
