@@ -3,7 +3,6 @@
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from dcv.main import app
@@ -39,15 +38,9 @@ class TestMd2PdfCLI:
         assert result.exit_code == 0 or "error" in result.output.lower()
 
 
-
 class TestMd2PdfRealConversion:
     """Integration tests using real conversion (requires Playwright installed)."""
 
-    @pytest.mark.skipif(
-        not Path("/usr/local/bin/playwright").exists()
-        and not Path.home().joinpath(".local/bin/playwright").exists(),
-        reason="Playwright not installed",
-    )
     def test_md2pdf_real_conversion_no_errors(
         self, cli_runner: CliRunner, tmp_path: Path
     ):
@@ -58,15 +51,13 @@ class TestMd2PdfRealConversion:
             app, ["md2pdf", "-f", str(sample_md), "-o", str(output_dir)]
         )
 
-        # Should complete without error (exit code 0 or succeed)
-        if result.exit_code != 0:
-            print(f"Command output: {result.output}")
-            print(f"Exception: {result.exception}")
-
-        assert "Converting:" in result.output or result.exit_code == 0
+        # Should complete without error
+        assert result.exit_code == 0, f"Command failed: {result.output}"
+        assert "Converting:" in result.output
 
         output_file = output_dir / "sample.pdf"
-        if output_file.exists():
-            with output_file.open("rb") as f:
-                header = f.read(4)
-                assert header == b"%PDF"
+        assert output_file.exists(), f"PDF not created: {result.output}"
+
+        with output_file.open("rb") as f:
+            header = f.read(4)
+            assert header == b"%PDF", "Generated file is not a valid PDF"

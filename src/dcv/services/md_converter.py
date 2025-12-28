@@ -55,13 +55,16 @@ class MdConverter(ConverterProtocol):
         else:
             try:
                 with resources.as_file(
-                    resources.files("dcv.assets.templates").joinpath("base.html")
+                    resources.files("dcv.assets.templates").joinpath("base.html.jinja")
                 ) as template_file:
                     template_content = Path(template_file).read_text(encoding="utf-8")
             except (TypeError, FileNotFoundError):
                 # Fallback for development
                 fallback_path = (
-                    Path(__file__).parent.parent / "assets" / "templates" / "base.html"
+                    Path(__file__).parent.parent
+                    / "assets"
+                    / "templates"
+                    / "base.html.jinja"
                 )
                 template_content = fallback_path.read_text(encoding="utf-8")
 
