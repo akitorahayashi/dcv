@@ -1,60 +1,41 @@
-Sample Document
+# Sample Document
 
-This file is a sample Markdown for the PDF and Markdown conversion tool "dcv".
+This is a **bold** text and *italic* text.
 
-Table of Contents
+## Lists
 
-1. Overview
+### Unordered List
+- Item 1
+- Item 2
+  - Nested item
 
-2. Features
+### Ordered List
+1. First item
+2. Second item
 
-3. Usage
+## Links and Code
 
-4. Command Examples
+Visit [GitHub](https://github.com) for more info.
 
-5. Reference Links
+Inline code: `print("Hello World")`
 
-Overview
+```python
+def hello():
+    print("Hello, World!")
+```
 
-dcv is a CLI tool that allows easy conversion between PDF and Markdown. It is designed based on Typer, with dependency injection and extensibility through protocols.
+## Blockquote
 
-Features
+> This is a blockquote.
+> It can span multiple lines.
 
-PDF→Markdown conversion uses markitdown
-Markdown→PDF conversion uses Playwright (Python package)
-High-quality PDF rendering with Chromium
+## Horizontal Rule
 
-Simple CLI command design
+---
 
-Highly extensible service provider configuration
+## Table
 
-Usage
-
-Convert PDF to Markdown
-
-dcv pdf2md input.pdf output.md
-
-Convert Markdown to PDF
-
-dcv md2pdf input.md output.pdf
-
-Command Examples
-
-# PDF→Markdown
-
-dcv pdf2md ./docs/sample.pdf ./docs/sample.md
-
-# Markdown→PDF
-
-dcv md2pdf ./docs/sample.md ./docs/sample.pdf
-
-Reference Links
-
-markitdown
-
-Playwright
-
-Typer
-
-This sample is used for verifying dcv operation and creating images of conversion results.
+| Header 1 | Header 2 |
+|----------|----------|
+| Cell 1   | Cell 2   |
 

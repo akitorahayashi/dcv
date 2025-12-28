@@ -38,7 +38,7 @@ setup:
 
 # Run the CLI application
 run *args:
-    @uv run python -m dcv {{args}}
+    @uv run dcv {{args}}
 
 # ==============================================================================
 # CODE QUALITY

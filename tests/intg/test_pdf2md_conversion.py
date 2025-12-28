@@ -77,4 +77,3 @@ class TestPdf2MdRealConversion:
 
         content = output_file.read_text(encoding="utf-8")
         assert "Sample Document" in content
-        assert "dcv" in content
