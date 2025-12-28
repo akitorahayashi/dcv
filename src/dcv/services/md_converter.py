@@ -2,6 +2,7 @@
 
 import asyncio
 import base64
+import html
 import logging
 import mimetypes
 import re
@@ -27,6 +28,15 @@ class PlaywrightNotInstalledError(Exception):
 class ImageEmbedder(HTMLParser):
     """HTML parser that converts relative image paths to data URLs."""
 
+    _MIME_TYPE_FALLBACK = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".svg": "image/svg+xml",
+        ".webp": "image/webp",
+    }
+
     def __init__(self, base_dir: Path) -> None:
         """
         Initialize the image embedder.
@@ -38,20 +48,34 @@ class ImageEmbedder(HTMLParser):
         self.base_dir = base_dir
         self.output: list[str] = []
 
+    def _process_img_attrs(
+        self, attrs: list[tuple[str, str | None]]
+    ) -> list[tuple[str, str | None]]:
+        """
+        Process img tag attributes, converting src to data URL if needed.
+
+        Args:
+            attrs: List of attribute name-value tuples.
+
+        Returns:
+            Processed list of attribute name-value tuples.
+        """
+        new_attrs = []
+        for attr_name, attr_value in attrs:
+            if attr_name == "src" and attr_value:
+                attr_value = self._convert_to_data_url(attr_value)
+            new_attrs.append((attr_name, attr_value))
+        return new_attrs
+
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         """Handle start tags, converting img src to data URLs."""
         if tag == "img":
-            new_attrs = []
-            for attr_name, attr_value in attrs:
-                if attr_name == "src" and attr_value:
-                    # Try to convert relative path to data URL
-                    attr_value = self._convert_to_data_url(attr_value)
-                new_attrs.append((attr_name, attr_value))
-            attrs = new_attrs
+            attrs = self._process_img_attrs(attrs)
 
-        # Reconstruct the tag
+        # Reconstruct the tag with HTML-escaped attribute values
         attrs_str = "".join(
-            f' {name}="{value}"' if value else f" {name}" for name, value in attrs
+            f' {name}="{html.escape(value)}"' if value is not None else f" {name}"
+            for name, value in attrs
         )
         self.output.append(f"<{tag}{attrs_str}>")
 
@@ -66,17 +90,12 @@ class ImageEmbedder(HTMLParser):
     def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         """Handle self-closing tags like <img />."""
         if tag == "img":
-            new_attrs = []
-            for attr_name, attr_value in attrs:
-                if attr_name == "src" and attr_value:
-                    # Try to convert relative path to data URL
-                    attr_value = self._convert_to_data_url(attr_value)
-                new_attrs.append((attr_name, attr_value))
-            attrs = new_attrs
+            attrs = self._process_img_attrs(attrs)
 
-        # Reconstruct the self-closing tag
+        # Reconstruct the self-closing tag with HTML-escaped attribute values
         attrs_str = "".join(
-            f' {name}="{value}"' if value else f" {name}" for name, value in attrs
+            f' {name}="{html.escape(value)}"' if value is not None else f" {name}"
+            for name, value in attrs
         )
         self.output.append(f"<{tag}{attrs_str} />")
 
@@ -109,14 +128,7 @@ class ImageEmbedder(HTMLParser):
             if not mime_type:
                 # Default to common image types
                 ext = image_path.suffix.lower()
-                mime_type = {
-                    ".jpg": "image/jpeg",
-                    ".jpeg": "image/jpeg",
-                    ".png": "image/png",
-                    ".gif": "image/gif",
-                    ".svg": "image/svg+xml",
-                    ".webp": "image/webp",
-                }.get(ext, "image/png")
+                mime_type = self._MIME_TYPE_FALLBACK.get(ext, "image/png")
 
             # Encode to base64
             encoded = base64.b64encode(image_data).decode("utf-8")
@@ -124,7 +136,7 @@ class ImageEmbedder(HTMLParser):
             # Return data URL
             return f"data:{mime_type};base64,{encoded}"
 
-        except Exception as e:
+        except (IOError, OSError, UnicodeDecodeError) as e:
             logging.warning(f"Failed to embed image {image_path}: {e}")
             return src
 
