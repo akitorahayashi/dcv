@@ -117,7 +117,7 @@ class TestMdConverter:
         handler = MdConverter()
 
         markdown_content = "# Hello\n\nThis is a **test**."
-        html = handler._render_html(markdown_content)
+        html = handler._render_html(markdown_content, tmp_path)
 
         assert "<h1>Hello</h1>" in html
         assert "<strong>test</strong>" in html
