@@ -109,11 +109,10 @@ def _load_bundled_asset(package: str, filename: str) -> str:
             return Path(asset_file).read_text(encoding="utf-8")
     except (TypeError, FileNotFoundError):
         # Fallback for development environment
-        parts = package.split(".")
-        fallback_path = (
-            Path(__file__).parent.parent / parts[-1] / filename.replace(".jinja", "")
+        asset_path_parts = package.split(".")[
+            1:
+        ]  # e.g., ['assets', 'styles'] from 'dcv.assets.styles'
+        fallback_path = Path(__file__).parent.parent.joinpath(
+            *asset_path_parts, filename
         )
-        if not fallback_path.exists():
-            # Try with .jinja extension
-            fallback_path = Path(__file__).parent.parent / parts[-1] / filename
         return fallback_path.read_text(encoding="utf-8")

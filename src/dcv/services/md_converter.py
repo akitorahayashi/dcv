@@ -137,10 +137,6 @@ class MdConverter(ConverterProtocol):
         Raises:
             ConversionError: If conversion fails.
         """
-        # Validate margin formats if provided
-        if any([margin_top, margin_right, margin_bottom, margin_left]):
-            self._validate_margins(margin_top, margin_right, margin_bottom, margin_left)
-
         # Read Markdown content
         md_content = input_path.read_text(encoding="utf-8")
 
@@ -174,16 +170,15 @@ class MdConverter(ConverterProtocol):
                 }
 
                 # If CLI margins provided, they override CSS
-                if any([margin_top, margin_right, margin_bottom, margin_left]):
-                    pdf_options["margin"] = {}
-                    if margin_top:
-                        pdf_options["margin"]["top"] = margin_top
-                    if margin_right:
-                        pdf_options["margin"]["right"] = margin_right
-                    if margin_bottom:
-                        pdf_options["margin"]["bottom"] = margin_bottom
-                    if margin_left:
-                        pdf_options["margin"]["left"] = margin_left
+                margins = {
+                    "top": margin_top,
+                    "right": margin_right,
+                    "bottom": margin_bottom,
+                    "left": margin_left,
+                }
+                cli_margins = {k: v for k, v in margins.items() if v is not None}
+                if cli_margins:
+                    pdf_options["margin"] = cli_margins
 
                 # Generate PDF
                 await page.pdf(**pdf_options)
@@ -276,6 +271,10 @@ class MdConverter(ConverterProtocol):
         margin_right = kwargs.get("margin_right")
         margin_bottom = kwargs.get("margin_bottom")
         margin_left = kwargs.get("margin_left")
+
+        # Validate margin formats early to fail fast
+        if any([margin_top, margin_right, margin_bottom, margin_left]):
+            self._validate_margins(margin_top, margin_right, margin_bottom, margin_left)
 
         # Run async conversion in sync context
         asyncio.run(
