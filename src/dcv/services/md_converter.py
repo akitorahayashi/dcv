@@ -1,59 +1,173 @@
-"""Markdown to PDF conversion handler using md-to-pdf."""
+"""Markdown to PDF conversion handler using Playwright."""
 
-import shutil
-import subprocess
+import asyncio
 from importlib import resources
 from pathlib import Path
+
+from jinja2 import Template
+from markdown_it import MarkdownIt
+from playwright.async_api import async_playwright
 
 from dcv.errors import ConversionError
 from dcv.protocols.converter_protocol import ConverterProtocol
 
 
-class MdToPdfNotFoundError(Exception):
-    """Raised when md-to-pdf command is not available."""
+class PlaywrightNotInstalledError(Exception):
+    """Raised when Playwright browsers are not installed."""
 
     pass
 
 
 class MdConverter(ConverterProtocol):
-    """Handler for converting Markdown files to PDF using md-to-pdf."""
+    """Handler for converting Markdown files to PDF using Playwright."""
 
     SUPPORTED_EXTENSIONS = {".md", ".markdown"}
 
-    def __init__(self, config_path: Path | None = None) -> None:
+    def __init__(
+        self,
+        template_path: Path | None = None,
+        css_path: Path | None = None,
+    ) -> None:
         """
-        Initialize the Markdown handler.
+        Initialize the Markdown converter.
 
         Args:
-            config_path: Optional custom config file path. If None, uses bundled config.
+            template_path: Optional custom HTML template path.
+            css_path: Optional custom CSS stylesheet path.
         """
-        self._config_path = config_path or self._get_default_config_path()
+        self._template_path = template_path
+        self._css_path = css_path
+        self._md = MarkdownIt("commonmark", {"html": True, "breaks": True})
 
-    def _get_default_config_path(self) -> Path:
-        """Get the path to the bundled md-to-pdf config file."""
-        try:
-            with resources.as_file(
-                resources.files("dcv.assets").joinpath("md-to-pdf-config.js")
-            ) as config_file:
-                return Path(config_file)
-        except (TypeError, FileNotFoundError):
-            # Fallback for development or when package not installed
-            return Path(__file__).parent.parent / "assets" / "md-to-pdf-config.js"
-
-    def _check_md_to_pdf_installed(self) -> None:
+    def _load_assets(self) -> tuple[str, str]:
         """
-        Check if md-to-pdf is available in the system.
+        Load HTML template and CSS from package assets or custom paths.
+
+        Returns:
+            Tuple of (template_content, css_content).
 
         Raises:
-            MdToPdfNotFoundError: If md-to-pdf is not installed.
+            FileNotFoundError: If custom paths provided but files don't exist.
         """
-        if shutil.which("md-to-pdf") is None:
-            raise MdToPdfNotFoundError(
-                "md-to-pdf command not found. Please install it with:\n"
-                "  npm install -g md-to-pdf\n"
-                "or\n"
-                "  pnpm add -g md-to-pdf"
-            )
+        # Load template
+        if self._template_path:
+            template_content = self._template_path.read_text(encoding="utf-8")
+        else:
+            try:
+                with resources.as_file(
+                    resources.files("dcv.assets.templates").joinpath("base.html")
+                ) as template_file:
+                    template_content = Path(template_file).read_text(encoding="utf-8")
+            except (TypeError, FileNotFoundError):
+                # Fallback for development
+                fallback_path = (
+                    Path(__file__).parent.parent / "assets" / "templates" / "base.html"
+                )
+                template_content = fallback_path.read_text(encoding="utf-8")
+
+        # Load CSS
+        if self._css_path:
+            css_content = self._css_path.read_text(encoding="utf-8")
+        else:
+            try:
+                with resources.as_file(
+                    resources.files("dcv.assets.styles").joinpath("pdf.css")
+                ) as css_file:
+                    css_content = Path(css_file).read_text(encoding="utf-8")
+            except (TypeError, FileNotFoundError):
+                # Fallback for development
+                fallback_path = (
+                    Path(__file__).parent.parent / "assets" / "styles" / "pdf.css"
+                )
+                css_content = fallback_path.read_text(encoding="utf-8")
+
+        return template_content, css_content
+
+    def _render_html(self, markdown_content: str) -> str:
+        """
+        Render Markdown to full HTML with template and styling.
+
+        Args:
+            markdown_content: Raw Markdown text.
+
+        Returns:
+            Complete HTML document string.
+        """
+        # Parse Markdown to HTML
+        html_body = self._md.render(markdown_content)
+
+        # Load assets
+        template_str, css_str = self._load_assets()
+
+        # Render template
+        template = Template(template_str)
+        full_html = template.render(body_content=html_body, css_content=css_str)
+
+        return full_html
+
+    async def _convert_async(self, input_path: Path, output_path: Path) -> None:
+        """
+        Async implementation of Markdown to PDF conversion.
+
+        Args:
+            input_path: Path to the source Markdown file.
+            output_path: Path where the PDF file will be written.
+
+        Raises:
+            ConversionError: If conversion fails.
+        """
+        # Read Markdown content
+        md_content = input_path.read_text(encoding="utf-8")
+
+        # Render to HTML
+        full_html = self._render_html(md_content)
+
+        # Ensure output directory exists
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            async with async_playwright() as p:
+                # Launch browser
+                browser = await p.chromium.launch()
+                page = await browser.new_page()
+
+                # Set content and wait for network idle
+                await page.set_content(full_html, wait_until="networkidle")
+
+                # Wait for MathJax to finish rendering
+                try:
+                    await page.evaluate("window.MathJax.typesetPromise()")
+                except Exception:
+                    # MathJax might not be needed for all documents
+                    pass
+
+                # Generate PDF with settings matching md-to-pdf config
+                await page.pdf(
+                    path=str(output_path),
+                    format="A4",
+                    margin={
+                        "top": "30mm",
+                        "right": "20mm",
+                        "bottom": "20mm",
+                        "left": "20mm",
+                    },
+                    print_background=True,
+                    scale=1.0,
+                )
+
+                await browser.close()
+
+        except Exception as e:
+            error_msg = str(e)
+            if (
+                "Executable doesn't exist" in error_msg
+                or "browser" in error_msg.lower()
+            ):
+                raise PlaywrightNotInstalledError(
+                    "Playwright browsers not installed. Please run:\n"
+                    "  playwright install chromium"
+                ) from e
+            raise ConversionError(f"PDF generation failed: {error_msg}") from e
 
     def convert(self, input_path: Path, output_path: Path) -> None:
         """
@@ -65,7 +179,7 @@ class MdConverter(ConverterProtocol):
 
         Raises:
             FileNotFoundError: If input file does not exist.
-            MdToPdfNotFoundError: If md-to-pdf is not installed.
+            PlaywrightNotInstalledError: If Playwright browsers are not installed.
             ConversionError: If conversion fails.
         """
         if not input_path.exists():
@@ -77,44 +191,8 @@ class MdConverter(ConverterProtocol):
                 f"Supported: {self.SUPPORTED_EXTENSIONS}"
             )
 
-        self._check_md_to_pdf_installed()
-
-        # Ensure output directory exists
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Build command
-        cmd = [
-            "md-to-pdf",
-            str(input_path),
-            "--config-file",
-            str(self._config_path),
-        ]
-
-        try:
-            # md-to-pdf outputs to the same directory as input by default
-            # We need to move it to the output path after conversion
-            result = subprocess.run(
-                cmd,
-                check=True,
-                capture_output=True,
-                text=True,
-                cwd=str(input_path.parent),
-            )
-
-            # md-to-pdf creates the PDF in the same directory as the input file
-            generated_pdf = input_path.with_suffix(".pdf")
-
-            if generated_pdf.exists() and generated_pdf != output_path:
-                shutil.move(str(generated_pdf), str(output_path))
-            elif not output_path.exists():
-                raise ConversionError(
-                    f"PDF was not generated. Command output: {result.stdout}"
-                )
-
-        except subprocess.CalledProcessError as e:
-            raise ConversionError(
-                f"Failed to convert {input_path}: {e.stderr or e.stdout}"
-            ) from e
+        # Run async conversion in sync context
+        asyncio.run(self._convert_async(input_path, output_path))
 
     def supports_extension(self, extension: str) -> bool:
         """

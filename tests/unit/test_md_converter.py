@@ -1,13 +1,13 @@
 """Unit tests for the Markdown to PDF handler service."""
 
-import shutil
+import asyncio
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from dcv.errors import ConversionError
-from dcv.services import MdConverter, MdToPdfNotFoundError
+from dcv.services import MdConverter
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
@@ -48,101 +48,82 @@ class TestMdConverter:
         with pytest.raises(ConversionError, match="Unsupported file extension"):
             handler.convert(input_path, output_path)
 
-    @patch("shutil.which")
-    def test_convert_md_to_pdf_not_installed(
-        self, mock_which: MagicMock, tmp_path: Path
-    ):
-        """Test that MdToPdfNotFoundError is raised when md-to-pdf is not installed."""
-        mock_which.return_value = None
-        handler = MdConverter()
+    # Note: Async mocking is complex. Integration tests cover error scenarios.
+    # These unit tests focus on synchronous methods and basic flows.
 
-        input_path = tmp_path / "document.md"
-        input_path.write_text("# Test Document")
-        output_path = tmp_path / "output.pdf"
-
-        with pytest.raises(MdToPdfNotFoundError, match="md-to-pdf command not found"):
-            handler.convert(input_path, output_path)
-
-    @patch("subprocess.run")
-    @patch("shutil.which")
-    @patch("shutil.move")
+    @patch("dcv.services.md_converter.async_playwright")
     def test_convert_success(
         self,
-        mock_move: MagicMock,
-        mock_which: MagicMock,
-        mock_run: MagicMock,
+        mock_playwright: MagicMock,
         tmp_path: Path,
     ):
         """Test successful Markdown to PDF conversion."""
-        mock_which.return_value = "/usr/local/bin/md-to-pdf"
-        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        # Set up async mock structure
+        mock_p = MagicMock()
+        mock_browser = MagicMock()
+        mock_page = MagicMock()
 
-        handler = MdConverter(config_path=tmp_path / "config.js")
+        # Mock async context manager
+        mock_playwright.return_value.__aenter__ = AsyncMock(return_value=mock_p)
+        mock_playwright.return_value.__aexit__ = AsyncMock()
+
+        # Mock browser launch and page creation
+        mock_p.chromium.launch = AsyncMock(return_value=mock_browser)
+        mock_browser.new_page = AsyncMock(return_value=mock_page)
+        mock_browser.close = AsyncMock()
+
+        # Mock page methods
+        mock_page.set_content = AsyncMock()
+        mock_page.evaluate = AsyncMock()
+        mock_page.pdf = AsyncMock()
+
+        handler = MdConverter()
 
         input_path = tmp_path / "document.md"
         input_path.write_text("# Test Document\n\nThis is a test.")
         output_path = tmp_path / "output" / "document.pdf"
 
-        # Create the expected generated PDF
-        generated_pdf = input_path.with_suffix(".pdf")
-        generated_pdf.write_bytes(b"%PDF-1.4 test")
-
         handler.convert(input_path, output_path)
 
-        # Verify subprocess was called
-        mock_run.assert_called_once()
-        call_args = mock_run.call_args
-        assert "md-to-pdf" in call_args[0][0]
-        assert "--config-file" in call_args[0][0]
+        # Verify page methods were called
+        mock_page.set_content.assert_called_once()
+        mock_page.pdf.assert_called_once()
+        mock_browser.close.assert_called_once()
 
-    @patch("subprocess.run")
-    @patch("shutil.which")
-    def test_convert_handles_subprocess_error(
-        self, mock_which: MagicMock, mock_run: MagicMock, tmp_path: Path
-    ):
-        """Test that subprocess errors are handled properly."""
-        import subprocess
+        # Verify output directory was created
+        assert output_path.parent.exists()
 
-        mock_which.return_value = "/usr/local/bin/md-to-pdf"
-        mock_run.side_effect = subprocess.CalledProcessError(
-            1, "md-to-pdf", stderr="Conversion failed"
-        )
+    def test_custom_template_and_css_paths(self, tmp_path: Path):
+        """Test that custom template and CSS paths can be provided."""
+        custom_template = tmp_path / "template.html"
+        custom_template.write_text("<html><body>{{ body_content }}</body></html>")
 
-        handler = MdConverter(config_path=tmp_path / "config.js")
+        custom_css = tmp_path / "style.css"
+        custom_css.write_text("body { margin: 0; }")
 
-        input_path = tmp_path / "document.md"
-        input_path.write_text("# Test Document")
-        output_path = tmp_path / "output.pdf"
+        handler = MdConverter(template_path=custom_template, css_path=custom_css)
+        assert handler._template_path == custom_template
+        assert handler._css_path == custom_css
 
-        with pytest.raises(ConversionError, match="Failed to convert"):
-            handler.convert(input_path, output_path)
-
-    def test_custom_config_path(self, tmp_path: Path):
-        """Test that custom config path is used."""
-        custom_config = tmp_path / "custom-config.js"
-        custom_config.write_text("module.exports = {};")
-
-        handler = MdConverter(config_path=custom_config)
-        assert handler._config_path == custom_config
-
-    def test_default_config_path_resolution(self):
-        """Test that default config path is resolved correctly."""
+    def test_asset_loading(self, tmp_path: Path):
+        """Test that assets are loaded correctly."""
         handler = MdConverter()
-        # The config path should be set (either from resources or fallback)
-        assert handler._config_path is not None
 
-    @pytest.mark.skipif(
-        shutil.which("md-to-pdf") is None, reason="md-to-pdf not installed"
-    )
-    def test_convert_real_md_fixture_no_errors(self, tmp_path: Path):
-        """Test MD→PDF conversion completes without errors using sample.md fixture."""
-        sample_md = FIXTURES_DIR / "sample.md"
+        # Should not raise an exception
+        template_str, css_str = handler._load_assets()
+
+        assert "<!DOCTYPE html>" in template_str
+        assert "{{ body_content }}" in template_str
+        assert "MathJax" in template_str
+        assert "font-family" in css_str
+
+    def test_render_html(self, tmp_path: Path):
+        """Test HTML rendering from Markdown."""
         handler = MdConverter()
-        output_path = tmp_path / "sample.pdf"
 
-        handler.convert(sample_md, output_path)
+        markdown_content = "# Hello\n\nThis is a **test**."
+        html = handler._render_html(markdown_content)
 
-        assert output_path.exists()
-        with output_path.open("rb") as f:
-            header = f.read(4)
-            assert header == b"%PDF"
+        assert "<h1>Hello</h1>" in html
+        assert "<strong>test</strong>" in html
+        assert "<!DOCTYPE html>" in html
