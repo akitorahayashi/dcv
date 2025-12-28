@@ -26,6 +26,10 @@ class MdConverter(ConverterProtocol):
 
     SUPPORTED_EXTENSIONS = {".md", ".markdown"}
 
+    # MathJax rendering timeout constants
+    _MATHJAX_LOAD_TIMEOUT_MS = 10000  # Time to wait for MathJax library to load
+    _MATHJAX_RENDER_WAIT_MS = 500  # Additional wait time after typesetting
+
     def __init__(
         self,
         template_path: Path | None = None,
@@ -159,14 +163,15 @@ class MdConverter(ConverterProtocol):
 
                 # Wait for MathJax to finish rendering
                 try:
-                    # Wait for MathJax to load (timeout after 10 seconds)
+                    # Wait for MathJax to load
                     await page.wait_for_function(
-                        "typeof window.MathJax !== 'undefined'", timeout=10000
+                        "typeof window.MathJax !== 'undefined'",
+                        timeout=self._MATHJAX_LOAD_TIMEOUT_MS,
                     )
                     # Wait for MathJax to finish typesetting
-                    await page.evaluate("() => window.MathJax.typesetPromise()")
+                    await page.evaluate("window.MathJax.typesetPromise()")
                     # Give MathJax a bit more time to complete rendering
-                    await page.wait_for_timeout(500)
+                    await page.wait_for_timeout(self._MATHJAX_RENDER_WAIT_MS)
                 except Exception as e:
                     # MathJax might not be needed for all documents, but log the error for debugging
                     logging.warning(f"Could not typeset MathJax: {e}")
