@@ -1,46 +1,44 @@
-サンプルドキュメント
+Sample Document
 
-このファイルは、PDFとMarkdownの相互変換ツール「dcv」のサンプルMarkdownです。
+This file is a sample Markdown for the PDF and Markdown conversion tool "dcv".
 
-⽬次
+Table of Contents
 
-1. 概要
+1. Overview
 
-2. 特徴
+2. Features
 
-3. 使い⽅
+3. Usage
 
-4. コマンド例
+4. Command Examples
 
-5. 参考リンク
+5. Reference Links
 
-概要
+Overview
 
-dcvは、PDFとMarkdownの間で簡単に変換できるCLIツールです。Typerベースで設計されてお
+dcv is a CLI tool that allows easy conversion between PDF and Markdown. It is designed based on Typer, with dependency injection and extensibility through protocols.
 
-り、依存性注⼊やプロトコルによる拡張性を備えています。
+Features
 
-特徴
+PDF→Markdown conversion uses markitdown
+Markdown→PDF conversion uses Playwright (Python package)
+High-quality PDF rendering with Chromium
 
-PDF→Markdown変換は markitdown を利⽤
-Markdown→PDF変換は md-to-pdf （npmパッケージ）を利⽤
-Google Chromeによる⾼品質なPDFレンダリング
+Simple CLI command design
 
-シンプルなCLIコマンド設計
+Highly extensible service provider configuration
 
-拡張性の⾼いサービスプロバイダ構成
+Usage
 
-使い⽅
-
-PDFからMarkdownへ変換
+Convert PDF to Markdown
 
 dcv pdf2md input.pdf output.md
 
-MarkdownからPDFへ変換
+Convert Markdown to PDF
 
 dcv md2pdf input.md output.pdf
 
-コマンド例
+Command Examples
 
 # PDF→Markdown
 
@@ -50,13 +48,13 @@ dcv pdf2md ./docs/sample.pdf ./docs/sample.md
 
 dcv md2pdf ./docs/sample.md ./docs/sample.pdf
 
-参考リンク
+Reference Links
 
 markitdown
 
-md-to-pdf
+Playwright
 
 Typer
 
-このサンプルはdcvの動作確認や変換結果のイメージ作成にご利⽤します。
+This sample is used for verifying dcv operation and creating images of conversion results.
 
