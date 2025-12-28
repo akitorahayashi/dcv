@@ -1,4 +1,7 @@
 module.exports = {
+  launch_options: {
+    executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+  },
   pdf_options: {
     format: 'a4',
     margin: '30mm 20mm',

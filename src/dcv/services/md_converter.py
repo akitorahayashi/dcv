@@ -15,7 +15,7 @@ class MdToPdfNotFoundError(Exception):
     pass
 
 
-class MdHandler(ConverterProtocol):
+class MdConverter(ConverterProtocol):
     """Handler for converting Markdown files to PDF using md-to-pdf."""
 
     SUPPORTED_EXTENSIONS = {".md", ".markdown"}
@@ -129,4 +129,4 @@ class MdHandler(ConverterProtocol):
         return extension.lower() in self.SUPPORTED_EXTENSIONS
 
 
-_: ConverterProtocol = MdHandler()
+_: ConverterProtocol = MdConverter()

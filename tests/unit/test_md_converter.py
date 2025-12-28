@@ -1,34 +1,37 @@
 """Unit tests for the Markdown to PDF handler service."""
 
+import shutil
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from dcv.errors import ConversionError
-from dcv.services.md_handler import MdHandler, MdToPdfNotFoundError
+from dcv.services import MdConverter, MdToPdfNotFoundError
+
+FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 
-class TestMdHandler:
-    """Unit tests for MdHandler."""
+class TestMdConverter:
+    """Unit tests for MdConverter."""
 
     def test_supports_extension_md(self):
         """Test that .md extension is supported."""
-        handler = MdHandler()
+        handler = MdConverter()
         assert handler.supports_extension(".md") is True
         assert handler.supports_extension(".MD") is True
         assert handler.supports_extension(".markdown") is True
 
     def test_supports_extension_unsupported(self):
         """Test that unsupported extensions return False."""
-        handler = MdHandler()
+        handler = MdConverter()
         assert handler.supports_extension(".pdf") is False
         assert handler.supports_extension(".txt") is False
         assert handler.supports_extension(".docx") is False
 
     def test_convert_file_not_found(self, tmp_path: Path):
         """Test that FileNotFoundError is raised for missing input."""
-        handler = MdHandler()
+        handler = MdConverter()
         input_path = tmp_path / "nonexistent.md"
         output_path = tmp_path / "output.pdf"
 
@@ -37,7 +40,7 @@ class TestMdHandler:
 
     def test_convert_unsupported_extension(self, tmp_path: Path):
         """Test that ConversionError is raised for unsupported file types."""
-        handler = MdHandler()
+        handler = MdConverter()
         input_path = tmp_path / "document.txt"
         input_path.write_text("test content")
         output_path = tmp_path / "output.pdf"
@@ -51,7 +54,7 @@ class TestMdHandler:
     ):
         """Test that MdToPdfNotFoundError is raised when md-to-pdf is not installed."""
         mock_which.return_value = None
-        handler = MdHandler()
+        handler = MdConverter()
 
         input_path = tmp_path / "document.md"
         input_path.write_text("# Test Document")
@@ -74,7 +77,7 @@ class TestMdHandler:
         mock_which.return_value = "/usr/local/bin/md-to-pdf"
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
-        handler = MdHandler(config_path=tmp_path / "config.js")
+        handler = MdConverter(config_path=tmp_path / "config.js")
 
         input_path = tmp_path / "document.md"
         input_path.write_text("# Test Document\n\nThis is a test.")
@@ -105,7 +108,7 @@ class TestMdHandler:
             1, "md-to-pdf", stderr="Conversion failed"
         )
 
-        handler = MdHandler(config_path=tmp_path / "config.js")
+        handler = MdConverter(config_path=tmp_path / "config.js")
 
         input_path = tmp_path / "document.md"
         input_path.write_text("# Test Document")
@@ -119,11 +122,27 @@ class TestMdHandler:
         custom_config = tmp_path / "custom-config.js"
         custom_config.write_text("module.exports = {};")
 
-        handler = MdHandler(config_path=custom_config)
+        handler = MdConverter(config_path=custom_config)
         assert handler._config_path == custom_config
 
     def test_default_config_path_resolution(self):
         """Test that default config path is resolved correctly."""
-        handler = MdHandler()
+        handler = MdConverter()
         # The config path should be set (either from resources or fallback)
         assert handler._config_path is not None
+
+    @pytest.mark.skipif(
+        shutil.which("md-to-pdf") is None, reason="md-to-pdf not installed"
+    )
+    def test_convert_real_md_fixture_no_errors(self, tmp_path: Path):
+        """Test MD→PDF conversion completes without errors using sample.md fixture."""
+        sample_md = FIXTURES_DIR / "sample.md"
+        handler = MdConverter()
+        output_path = tmp_path / "sample.pdf"
+
+        handler.convert(sample_md, output_path)
+
+        assert output_path.exists()
+        with output_path.open("rb") as f:
+            header = f.read(4)
+            assert header == b"%PDF"

@@ -112,18 +112,17 @@ just fix        # auto-format with ruff format and ruff --fix
 │       ├── __init__.py
 │       ├── __main__.py      # python -m dcv entry point
 │       ├── main.py          # Typer app factory and command registration
+│       ├── container.py     # DI container and context
 │       ├── assets/          # Static resources
 │       │   └── md-to-pdf-config.js  # Default PDF styling configuration
 │       ├── commands/
 │       │   └── converter.py # pdf2md and md2pdf commands
 │       ├── config/
 │       │   └── settings.py  # Pydantic settings
-│       ├── core/
-│       │   └── container.py # DI container and context
 │       ├── protocols/       # Protocol definitions for service interfaces
 │       └── services/        # Converter implementations
-│           ├── pdf_handler.py   # PDF to Markdown conversion
-│           ├── md_handler.py    # Markdown to PDF conversion
+│           ├── pdf_converter.py   # PDF to Markdown conversion
+│           ├── md_converter.py    # Markdown to PDF conversion
 │           └── file_manager.py  # File discovery and path resolution
 ├── tests/
 │   ├── unit/                # Pure unit tests (service layer)

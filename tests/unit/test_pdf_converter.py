@@ -6,28 +6,30 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from dcv.errors import ConversionError
-from dcv.services.pdf_handler import PdfHandler
+from dcv.services import PdfConverter
+
+FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 
-class TestPdfHandler:
-    """Unit tests for PdfHandler."""
+class TestPdfConverter:
+    """Unit tests for PdfConverter."""
 
     def test_supports_extension_pdf(self):
         """Test that .pdf extension is supported."""
-        handler = PdfHandler()
+        handler = PdfConverter()
         assert handler.supports_extension(".pdf") is True
         assert handler.supports_extension(".PDF") is True
 
     def test_supports_extension_unsupported(self):
         """Test that unsupported extensions return False."""
-        handler = PdfHandler()
+        handler = PdfConverter()
         assert handler.supports_extension(".md") is False
         assert handler.supports_extension(".txt") is False
         assert handler.supports_extension(".docx") is False
 
     def test_convert_file_not_found(self, tmp_path: Path):
         """Test that FileNotFoundError is raised for missing input."""
-        handler = PdfHandler()
+        handler = PdfConverter()
         input_path = tmp_path / "nonexistent.pdf"
         output_path = tmp_path / "output.md"
 
@@ -36,7 +38,7 @@ class TestPdfHandler:
 
     def test_convert_unsupported_extension(self, tmp_path: Path):
         """Test that ConversionError is raised for unsupported file types."""
-        handler = PdfHandler()
+        handler = PdfConverter()
         input_path = tmp_path / "document.txt"
         input_path.write_text("test content")
         output_path = tmp_path / "output.md"
@@ -44,7 +46,7 @@ class TestPdfHandler:
         with pytest.raises(ConversionError, match="Unsupported file extension"):
             handler.convert(input_path, output_path)
 
-    @patch("dcv.services.pdf_handler.MarkItDown")
+    @patch("dcv.services.pdf_converter.MarkItDown")
     def test_convert_success(self, mock_md_class: MagicMock, tmp_path: Path):
         """Test successful PDF to Markdown conversion."""
         # Setup mock
@@ -54,7 +56,7 @@ class TestPdfHandler:
         mock_result.text_content = "# Converted Content\n\nThis is the converted text."
         mock_md_instance.convert.return_value = mock_result
 
-        handler = PdfHandler()
+        handler = PdfConverter()
 
         input_path = tmp_path / "document.pdf"
         input_path.write_bytes(b"%PDF-1.4 dummy content")
@@ -70,7 +72,7 @@ class TestPdfHandler:
             == "# Converted Content\n\nThis is the converted text."
         )
 
-    @patch("dcv.services.pdf_handler.MarkItDown")
+    @patch("dcv.services.pdf_converter.MarkItDown")
     def test_convert_creates_output_directory(
         self, mock_md_class: MagicMock, tmp_path: Path
     ):
@@ -81,7 +83,7 @@ class TestPdfHandler:
         mock_result.text_content = "Test content"
         mock_md_instance.convert.return_value = mock_result
 
-        handler = PdfHandler()
+        handler = PdfConverter()
 
         input_path = tmp_path / "document.pdf"
         input_path.write_bytes(b"%PDF-1.4 dummy content")
@@ -92,7 +94,7 @@ class TestPdfHandler:
         assert output_path.parent.exists()
         assert output_path.exists()
 
-    @patch("dcv.services.pdf_handler.MarkItDown")
+    @patch("dcv.services.pdf_converter.MarkItDown")
     def test_convert_handles_conversion_error(
         self, mock_md_class: MagicMock, tmp_path: Path
     ):
@@ -101,7 +103,7 @@ class TestPdfHandler:
         mock_md_class.return_value = mock_md_instance
         mock_md_instance.convert.side_effect = RuntimeError("MarkItDown internal error")
 
-        handler = PdfHandler()
+        handler = PdfConverter()
 
         input_path = tmp_path / "document.pdf"
         input_path.write_bytes(b"%PDF-1.4 dummy content")
@@ -109,3 +111,24 @@ class TestPdfHandler:
 
         with pytest.raises(ConversionError, match="Failed to convert"):
             handler.convert(input_path, output_path)
+
+    def test_convert_real_pdf_fixture_no_errors(self, tmp_path: Path):
+        """Test PDF→MD conversion completes without errors via MD→PDF→MD round-trip."""
+        from dcv.services import MdConverter
+
+        sample_md = FIXTURES_DIR / "sample.md"
+
+        # First: MD→PDF
+        md_converter = MdConverter()
+        sample_pdf = tmp_path / "sample.pdf"
+        md_converter.convert(sample_md, sample_pdf)
+
+        # Then: PDF→MD
+        pdf_converter = PdfConverter()
+        output_md = tmp_path / "output.md"
+        pdf_converter.convert(sample_pdf, output_md)
+
+        assert output_md.exists()
+        content = output_md.read_text(encoding="utf-8")
+        assert "サンプルドキュメント" in content
+        assert "dcv" in content

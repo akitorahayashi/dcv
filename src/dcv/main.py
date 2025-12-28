@@ -6,8 +6,8 @@ from typing import Optional
 import typer
 from rich.console import Console
 
-from dcv.commands.converter import converter_app
-from dcv.core.container import create_container
+from dcv.commands import md2pdf_app, pdf2md_app
+from dcv.container import create_container
 
 console = Console()
 
@@ -43,8 +43,9 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-# Register sub-command groups
-app.add_typer(converter_app, name="")  # Empty name to expose commands at root level
+# Register commands at root level
+app.add_typer(pdf2md_app, name="")
+app.add_typer(md2pdf_app, name="")
 
 
 @app.callback()

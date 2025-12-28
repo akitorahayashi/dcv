@@ -75,3 +75,5 @@ Desktop.ini
 
 # Temporary files
 .tmp/*
+
+tests/fixtures/*.pdf

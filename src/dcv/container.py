@@ -5,9 +5,8 @@ from pathlib import Path
 
 from dcv.config.settings import AppSettings
 from dcv.protocols.converter_protocol import ConverterProtocol
+from dcv.services import MdConverter, PdfConverter
 from dcv.services.file_manager import FileManager
-from dcv.services.md_handler import MdHandler
-from dcv.services.pdf_handler import PdfHandler
 
 
 @dataclass
@@ -15,15 +14,15 @@ class AppContext:
     """Application context holding settings and service instances."""
 
     settings: AppSettings
-    pdf_handler: ConverterProtocol
-    md_handler: ConverterProtocol
+    pdf_converter: ConverterProtocol
+    md_converter: ConverterProtocol
     file_manager: FileManager
 
 
 def create_container(
     settings: AppSettings | None = None,
-    pdf_handler: ConverterProtocol | None = None,
-    md_handler: ConverterProtocol | None = None,
+    pdf_converter: ConverterProtocol | None = None,
+    md_converter: ConverterProtocol | None = None,
     file_manager: FileManager | None = None,
 ) -> AppContext:
     """
@@ -31,8 +30,8 @@ def create_container(
 
     Args:
         settings: Optional pre-configured settings. If None, loads from environment.
-        pdf_handler: Optional PDF handler override for testing.
-        md_handler: Optional MD handler override for testing.
+        pdf_converter: Optional PDF converter override for testing.
+        md_converter: Optional MD converter override for testing.
         file_manager: Optional file manager override for testing.
 
     Returns:
@@ -41,18 +40,18 @@ def create_container(
     if settings is None:
         settings = AppSettings()
 
-    if pdf_handler is None:
-        pdf_handler = PdfHandler()
+    if pdf_converter is None:
+        pdf_converter = PdfConverter()
 
-    if md_handler is None:
-        md_handler = MdHandler()
+    if md_converter is None:
+        md_converter = MdConverter()
 
     if file_manager is None:
         file_manager = FileManager(output_dir=Path(settings.default_output_dir))
 
     return AppContext(
         settings=settings,
-        pdf_handler=pdf_handler,
-        md_handler=md_handler,
+        pdf_converter=pdf_converter,
+        md_converter=md_converter,
         file_manager=file_manager,
     )
