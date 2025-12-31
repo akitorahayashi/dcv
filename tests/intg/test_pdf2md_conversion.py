@@ -21,11 +21,11 @@ class TestPdf2MdCLI:
         test_pdf = tmp_path / "test.pdf"
         test_pdf.write_bytes(b"%PDF-1.4 test content")
 
-        result = cli_runner.invoke(
-            app, ["pdf2md", "-f", str(test_pdf), "-o", str(tmp_path / "output")]
-        )
+        result = cli_runner.invoke(app, ["pdf2md", str(test_pdf)])
 
         assert result.exit_code == 0 and "Converting:" in result.output
+        # Verify output path is in the same directory as input file
+        mock_convert.assert_called_once_with(test_pdf, tmp_path / "test.md")
 
     @patch("dcv.services.pdf_converter.PdfConverter.convert")
     def test_pdf2md_with_directory(
@@ -38,7 +38,7 @@ class TestPdf2MdCLI:
         (input_dir / "doc2.pdf").write_bytes(b"%PDF-1.4 test")
 
         result = cli_runner.invoke(
-            app, ["pdf2md", "-d", str(input_dir), "-o", str(tmp_path / "output")]
+            app, ["pdf2md", str(input_dir), "-o", str(tmp_path / "output")]
         )
 
         assert result.exit_code == 0 and "Converting:" in result.output
@@ -55,16 +55,14 @@ class TestPdf2MdRealConversion:
 
         # First: MD→PDF
         pdf_dir = tmp_path / "pdf"
-        result = cli_runner.invoke(
-            app, ["md2pdf", "-f", str(sample_md), "-o", str(pdf_dir)]
-        )
+        result = cli_runner.invoke(app, ["md2pdf", str(sample_md), "-o", str(pdf_dir)])
         assert result.exit_code == 0
 
         # Then: PDF→MD
         sample_pdf = pdf_dir / "sample.pdf"
         output_dir = tmp_path / "output"
         result = cli_runner.invoke(
-            app, ["pdf2md", "-f", str(sample_pdf), "-o", str(output_dir)]
+            app, ["pdf2md", str(sample_pdf), "-o", str(output_dir)]
         )
 
         assert result.exit_code == 0

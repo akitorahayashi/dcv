@@ -96,7 +96,6 @@ class TestScaffoldCommand:
             app,
             [
                 "md2pdf",
-                "-f",
                 str(test_md),
                 "-o",
                 str(output_dir),

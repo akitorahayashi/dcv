@@ -35,8 +35,7 @@ class TestCLICommands:
         result = cli_runner.invoke(app, ["pdf2md", "--help"])
 
         assert result.exit_code == 0
-        assert "-f" in result.output or "--file" in result.output
-        assert "-d" in result.output or "--dir" in result.output
+        assert "PATH" in result.output
         assert "-o" in result.output or "--output-dir" in result.output
 
     def test_md2pdf_help(self, cli_runner: CliRunner):
@@ -44,20 +43,19 @@ class TestCLICommands:
         result = cli_runner.invoke(app, ["md2pdf", "--help"])
 
         assert result.exit_code == 0
-        assert "-f" in result.output or "--file" in result.output
-        assert "-d" in result.output or "--dir" in result.output
+        assert "PATH" in result.output
         assert "-o" in result.output or "--output-dir" in result.output
 
     def test_pdf2md_requires_input(self, cli_runner: CliRunner):
-        """Test that pdf2md requires either --file or --dir."""
+        """Test that pdf2md requires PATH argument."""
         result = cli_runner.invoke(app, ["pdf2md"])
 
         assert result.exit_code != 0
-        assert "must be specified" in result.output or "Error" in result.output
+        assert "Missing argument" in result.output or "PATH" in result.output
 
     def test_md2pdf_requires_input(self, cli_runner: CliRunner):
-        """Test that md2pdf requires either --file or --dir."""
+        """Test that md2pdf requires PATH argument."""
         result = cli_runner.invoke(app, ["md2pdf"])
 
         assert result.exit_code != 0
-        assert "must be specified" in result.output or "Error" in result.output
+        assert "Missing argument" in result.output or "PATH" in result.output
