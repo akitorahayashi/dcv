@@ -40,19 +40,7 @@ def pdf2md(
         dcv pdf2md ./pdfs -o ./custom_output
     """
     app_ctx: AppContext = ctx.obj
-    is_dir = path.is_dir()
-
-    # Determine output directory
-    if output_dir is not None:
-        resolved_output_dir = output_dir
-    elif is_dir:
-        resolved_output_dir = Path("dcv_outputs")
-    else:
-        resolved_output_dir = path.parent
-
-    app_ctx.file_manager.output_dir = resolved_output_dir
-    if is_dir or output_dir is not None:
-        app_ctx.file_manager.ensure_output_dir()
+    app_ctx.file_manager.setup_output_dir(path, output_dir)
 
     input_extensions = {".pdf"}
     output_extension = ".md"

@@ -24,6 +24,8 @@ class TestPdf2MdCLI:
         result = cli_runner.invoke(app, ["pdf2md", str(test_pdf)])
 
         assert result.exit_code == 0 and "Converting:" in result.output
+        # Verify output path is in the same directory as input file
+        mock_convert.assert_called_once_with(test_pdf, tmp_path / "test.md")
 
     @patch("dcv.services.pdf_converter.PdfConverter.convert")
     def test_pdf2md_with_directory(

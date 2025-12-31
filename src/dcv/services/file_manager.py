@@ -36,6 +36,34 @@ class FileManager:
         self._output_dir.mkdir(parents=True, exist_ok=True)
         return self._output_dir
 
+    def setup_output_dir(
+        self,
+        input_path: Path,
+        explicit_output_dir: Path | None = None,
+    ) -> None:
+        """
+        Determine and configure the output directory based on input path type.
+
+        For single file input: output to the same directory as the input file.
+        For directory input: output to ./dcv_outputs/ in the current directory.
+        If explicit_output_dir is provided, it overrides the default behavior.
+
+        Args:
+            input_path: The input file or directory path.
+            explicit_output_dir: Optional explicit output directory from CLI -o option.
+        """
+        is_dir = input_path.is_dir()
+
+        if explicit_output_dir is not None:
+            self._output_dir = explicit_output_dir
+        elif is_dir:
+            self._output_dir = Path("dcv_outputs")
+        else:
+            self._output_dir = input_path.parent
+
+        if is_dir or explicit_output_dir is not None:
+            self.ensure_output_dir()
+
     def validate_input_path(self, path: Path) -> None:
         """
         Validate that an input path exists.
