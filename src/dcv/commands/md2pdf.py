@@ -6,7 +6,6 @@ from typing import Optional
 import typer
 from rich.console import Console
 
-from dcv.commands.validate_options import validate_input_options
 from dcv.container import AppContext
 
 app = typer.Typer()
@@ -16,31 +15,19 @@ console = Console()
 @app.command("md2pdf")
 def md2pdf(
     ctx: typer.Context,
-    file: Optional[Path] = typer.Option(
-        None,
-        "--file",
-        "-f",
-        help="Input Markdown file to convert.",
+    path: Path = typer.Argument(
+        ...,
+        help="Input Markdown file or directory containing Markdown files.",
         exists=True,
         file_okay=True,
-        dir_okay=False,
-        resolve_path=True,
-    ),
-    directory: Optional[Path] = typer.Option(
-        None,
-        "--dir",
-        "-d",
-        help="Input directory containing Markdown files.",
-        exists=True,
-        file_okay=False,
         dir_okay=True,
         resolve_path=True,
     ),
-    output_dir: Path = typer.Option(
-        Path("dcv_output"),
+    output_dir: Optional[Path] = typer.Option(
+        None,
         "--output-dir",
         "-o",
-        help="Output directory for converted PDF files.",
+        help="Output directory for converted files. Default: same dir for file, ./dcv_outputs for dir.",
         resolve_path=True,
     ),
     css: Optional[Path] = typer.Option(
@@ -80,21 +67,25 @@ def md2pdf(
     Requires Playwright browsers: playwright install chromium
 
     Examples:
-        dcv md2pdf -f document.md
-        dcv md2pdf -f document.md --css custom.css
-        dcv md2pdf -f document.md --margin-top 35mm --margin-bottom 30mm
-        dcv md2pdf -d ./markdown -o ./pdf_output
+        dcv md2pdf document.md
+        dcv md2pdf document.md --css custom.css
+        dcv md2pdf document.md --margin-top 35mm --margin-bottom 30mm
+        dcv md2pdf ./markdown -o ./pdf_output
     """
     app_ctx: AppContext = ctx.obj
+    is_dir = path.is_dir()
 
-    try:
-        source, is_dir = validate_input_options(file, directory)
-    except typer.BadParameter as e:
-        console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+    # Determine output directory
+    if output_dir is not None:
+        resolved_output_dir = output_dir
+    elif is_dir:
+        resolved_output_dir = Path("dcv_outputs")
+    else:
+        resolved_output_dir = path.parent
 
-    app_ctx.file_manager.output_dir = output_dir
-    app_ctx.file_manager.ensure_output_dir()
+    app_ctx.file_manager.output_dir = resolved_output_dir
+    if is_dir or output_dir is not None:
+        app_ctx.file_manager.ensure_output_dir()
 
     input_extensions = {".md", ".markdown"}
     output_extension = ".pdf"
@@ -102,7 +93,7 @@ def md2pdf(
     error_count = 0
 
     for input_path, output_path in app_ctx.file_manager.generate_path_pairs(
-        source, input_extensions, output_extension
+        path, input_extensions, output_extension
     ):
         try:
             console.print(f"Converting: [cyan]{input_path.name}[/cyan]...")

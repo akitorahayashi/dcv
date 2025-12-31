@@ -30,7 +30,7 @@ class TestMd2PdfCLI:
         test_md.write_text("# Test Document")
 
         result = cli_runner.invoke(
-            app, ["md2pdf", "-f", str(test_md), "-o", str(tmp_path / "output")]
+            app, ["md2pdf", str(test_md), "-o", str(tmp_path / "output")]
         )
 
         # Should either show error or complete (mock may not prevent real Playwright)
@@ -48,7 +48,7 @@ class TestMd2PdfRealConversion:
         sample_md = FIXTURES_DIR / "sample.md"
         output_dir = tmp_path / "output"
         result = cli_runner.invoke(
-            app, ["md2pdf", "-f", str(sample_md), "-o", str(output_dir)]
+            app, ["md2pdf", str(sample_md), "-o", str(output_dir)]
         )
 
         # Should complete without error
@@ -72,7 +72,6 @@ class TestMd2PdfRealConversion:
             app,
             [
                 "md2pdf",
-                "-f",
                 str(sample_md),
                 "-o",
                 str(output_dir),
@@ -100,7 +99,6 @@ class TestMd2PdfRealConversion:
             app,
             [
                 "md2pdf",
-                "-f",
                 str(sample_md),
                 "-o",
                 str(output_dir),
@@ -129,7 +127,6 @@ class TestMd2PdfRealConversion:
             app,
             [
                 "md2pdf",
-                "-f",
                 str(sample_md),
                 "-o",
                 str(output_dir),
@@ -154,7 +151,6 @@ class TestMd2PdfRealConversion:
             app,
             [
                 "md2pdf",
-                "-f",
                 str(sample_md),
                 "-o",
                 str(output_dir),
